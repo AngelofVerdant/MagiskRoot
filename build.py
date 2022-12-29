@@ -309,13 +309,7 @@ def binary_dump(src, var_name, compressor=xz):
 
 
 def dump_bin_header(args):
-    stub = op.join(config['outdir'], f'stub-{"release" if args.release else "debug"}.apk')
-    if not op.exists(stub):
-        error('Build stub APK before building "magiskinit"')
     mkdir_p(native_gen_path)
-    with open(stub, 'rb') as src:
-        text = binary_dump(src, 'manager_xz')
-        write_if_diff(op.join(native_gen_path, 'binaries.h'), text)
     for arch in archs:
         preload = op.join('native', 'out', arch, 'libinit-ld.so')
         with open(preload, 'rb') as src:
@@ -431,6 +425,14 @@ def build_app(args):
     header('* Building the Magisk app')
     build_apk(args, 'app')
 
+    # Stub building is directly integrated into the main app
+    # build process. Copy the stub APK into output directory.
+    build_type = 'release' if args.release else 'debug'
+    apk = f'stub-{build_type}.apk'
+    source = op.join('app', 'src', 'main', 'assets', 'stub.apk')
+    target = op.join(config['outdir'], apk)
+    cp(source, target)
+
 
 def build_stub(args):
     header('* Building the stub app')
@@ -455,6 +457,7 @@ def cleanup(args):
     if 'java' in args.target:
         header('* Cleaning java')
         execv([gradlew, 'app:clean', 'app:shared:clean', 'stub:clean'])
+        rm_rf(op.join('app', 'src', 'main', 'assets'))
 
 
 def setup_ndk(args):
@@ -554,7 +557,6 @@ def patch_avd_ramdisk(args):
 
 
 def build_all(args):
-    build_stub(args)
     build_binary(args)
     build_app(args)
 
