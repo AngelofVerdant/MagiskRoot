@@ -35,6 +35,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.zip.InflaterInputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipOutputStream;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
@@ -42,9 +45,6 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import io.michaelrocks.paranoid.Obfuscate;
-
-@Obfuscate
 public class DownloadActivity extends Activity {
 
     private static final String APP_NAME = "Magisk";
@@ -83,7 +83,7 @@ public class DownloadActivity extends Activity {
         ProviderInstaller.install(this);
 
         if (Networking.checkNetworkStatus(this)) {
-            if (apkLink == null) {
+            if (BuildConfig.APK_URL == null) {
                 fetchCanary();
             } else {
                 showDialog();
@@ -177,18 +177,25 @@ public class DownloadActivity extends Activity {
                 decryptResources(new FileOutputStream(fd));
                 Os.lseek(fd, 0, OsConstants.SEEK_SET);
                 var loader = new ResourcesLoader();
-                try (var pfd = ParcelFileDescriptor.dup(fd);
-                     var provider = ResourcesProvider.loadFromTable(pfd, null)) {
-                    loader.addProvider(provider);
+                try (var pfd = ParcelFileDescriptor.dup(fd)) {
+                    loader.addProvider(ResourcesProvider.loadFromTable(pfd, null));
                     getResources().addLoaders(loader);
                 }
             } finally {
                 Os.close(fd);
             }
         } else {
-            File dir = new File(getCodeCacheDir(), "res");
-            decryptResources(new FileOutputStream(new File(dir, "resources.arsc")));
-            StubApk.addAssetPath(getResources(), dir.getPath());
+            File res = new File(getCodeCacheDir(), "res.apk");
+            try (var out = new ZipOutputStream(new FileOutputStream(res))) {
+                // AndroidManifest.xml is reuqired on Android 6-, and directory support is broken on Android 9-10
+                out.putNextEntry(new ZipEntry("AndroidManifest.xml"));
+                try (var stubApk = new ZipFile(getPackageCodePath())) {
+                    APKInstall.transfer(stubApk.getInputStream(stubApk.getEntry("AndroidManifest.xml")), out);
+                }
+                out.putNextEntry(new ZipEntry("resources.arsc"));
+                decryptResources(out);
+            }
+            StubApk.addAssetPath(getResources(), res.getPath());
         }
     }
 }

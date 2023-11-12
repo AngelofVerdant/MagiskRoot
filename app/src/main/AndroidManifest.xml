@@ -13,7 +13,6 @@
 
     <application
         android:name=".core.App"
-        android:extractNativeLibs="true"
         android:icon="@drawable/ic_launcher"
         android:multiArch="true"
         tools:ignore="UnusedAttribute,GoogleAppIndexingWarning"
@@ -63,7 +62,8 @@
 
         <service
             android:name=".core.download.DownloadService"
-            android:exported="false" />
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <service
             android:name=".core.JobService"
@@ -82,11 +82,15 @@
             android:name="androidx.room.MultiInstanceInvalidationService"
             tools:node="remove" />
 
-        <!-- We don't need emoji compat -->
+        <!-- We handle initialization ourselves -->
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
-            android:exported="false"
+            tools:node="remove" />
+
+        <!-- We handle profile installation ourselves  -->
+        <receiver
+            android:name="androidx.profileinstaller.ProfileInstallReceiver"
             tools:node="remove" />
 
     </application>

@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
     `kotlin-dsl`
 }
@@ -17,16 +15,10 @@ gradlePlugin {
     }
 }
 
-tasks.withType<KotlinCompile> {
-    kotlinOptions {
-        jvmTarget = "11"
-    }
-}
-
 dependencies {
-    implementation(kotlin("gradle-plugin", "1.7.21"))
-    implementation("com.android.tools.build:gradle:7.3.1")
-    implementation("androidx.navigation:navigation-safe-args-gradle-plugin:2.5.3")
-    implementation("io.michaelrocks:paranoid-gradle-plugin:0.3.7")
-    implementation("org.eclipse.jgit:org.eclipse.jgit:6.4.0.202211300538-r")
+    implementation(embeddedKotlin("gradle-plugin"))
+    implementation("com.android.tools.build:gradle:8.1.2")
+    implementation("androidx.navigation:navigation-safe-args-gradle-plugin:2.7.4")
+    implementation("org.lsposed.lsparanoid:gradle-plugin:0.5.2")
+    implementation("org.eclipse.jgit:org.eclipse.jgit:6.7.0.202309050840-r")
 }
